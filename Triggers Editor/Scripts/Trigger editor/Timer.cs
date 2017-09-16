@@ -38,7 +38,7 @@ namespace TriggerEditor
             }
         }
 
-        [NodeMethod("Timer", "Start timer")]
+        [NodeMethod("Timer", "Start timer", NodeMethodType.Action)]
         public void StartTimer(float time, bool repeat)
         {
             StopTimer();
@@ -47,7 +47,7 @@ namespace TriggerEditor
             m_repeat = repeat;
         }
 
-        [NodeMethod("Timer", "Stop")]
+        [NodeMethod("Timer", "Stop", NodeMethodType.Action)]
         public void StopTimer()
         {
             m_stopped = true;
@@ -55,25 +55,25 @@ namespace TriggerEditor
             m_elapsedTime = 0;
         }
 
-        [NodeMethod("Timer", "Timer ends")]
+        [NodeMethod("Timer", "Timer ends", NodeMethodType.Event)]
         public bool TimerEnds()
         {
             return m_ends;
         }
 
-        [NodeMethod("Time", "Wait")]
+        [NodeMethod("Time", "Wait", NodeMethodType.Action)]
         static public IEnumerator WaitCoroutine(float time)
         {
             yield return new WaitForSeconds(time);
         }
 
-        [NodeMethod("Time", "Time elapsed", "Seconds")]
+        [NodeMethod("Time", "Time elapsed", NodeMethodType.Other, "Seconds")]
         static public float TimeElapsed()
         {
             return Time.timeSinceLevelLoad;
         }
 
-        [NodeMethod("Time", "After N seconds")]
+        [NodeMethod("Time", "After N seconds", NodeMethodType.Condition)]
         static public bool AfterNSecondsInScene(float seconds)
         {
             return Time.timeSinceLevelLoad >= seconds;

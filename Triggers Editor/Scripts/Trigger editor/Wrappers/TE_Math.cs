@@ -13,7 +13,7 @@ namespace TriggerEditor
             Divide
         }
 
-        [NodeMethod("Math", "Real operation")]
+        [NodeMethod("Math", "Real operation", NodeMethodType.Other)]
         static public float RealOp(ScalarOperation operation, float a, float b)
         {
             switch(operation)
@@ -27,7 +27,7 @@ namespace TriggerEditor
             throw new System.Exception("Unknow math operation");
         }
 
-        [NodeMethod("Math", "Integer operation")]
+        [NodeMethod("Math", "Integer operation", NodeMethodType.Other)]
         static public int IntegerOp(ScalarOperation operation, int a, int b)
         {
             switch (operation)
@@ -48,7 +48,7 @@ namespace TriggerEditor
             CrossProduct
         }
 
-        [NodeMethod("Math", "Vector3 operation")]
+        [NodeMethod("Math", "Vector3 operation", NodeMethodType.Other)]
         static public Vector3 VectorOp(VV2VOperation3 operation, Vector3 a, Vector3 b)
         {
             switch (operation)
@@ -61,7 +61,7 @@ namespace TriggerEditor
             throw new System.Exception("Unknow math operation");
         }
 
-        [NodeMethod("Convert", "Vector3 to XYZ", "X")]
+        [NodeMethod("Convert", "Vector3 to XYZ", NodeMethodType.Other, "X")]
         static public float Vector3ToXYZ(Vector3 vector, out float Y, out float Z)
         {
             Y = vector.y;
@@ -69,7 +69,7 @@ namespace TriggerEditor
             return vector.x;
         }
 
-        [NodeMethod("Convert", "XYZ to Vector3", "Vector3")]
+        [NodeMethod("Convert", "XYZ to Vector3", NodeMethodType.Other, "Vector3")]
         static public Vector3 XYZtoVector3(float X, float Y, float Z)
         {
             return new Vector3(X, Y, Z);

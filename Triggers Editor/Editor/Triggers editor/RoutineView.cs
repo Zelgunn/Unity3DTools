@@ -7,7 +7,12 @@ namespace TriggerEditor
 {
     static public class RoutineView
     {
-        //static private Vector2 s_viewCenter;
+        public struct SetNodeFinalCallbackObject
+        {
+            public Routine routine;
+            public Node newFinalNode;
+        }
+
         public struct DeleteNodeCallbackObject
         {
             public Routine routine;
@@ -26,7 +31,6 @@ namespace TriggerEditor
             DrawLinks(routine);
 
             ProcessEvent(routine, Event.current);
-
         }
 
         static private void DrawNodes(Routine routine)
@@ -38,7 +42,6 @@ namespace TriggerEditor
                     NodeView.Draw(routine.nodes[i]);
                 }
             }
-            NodeView.Draw(routine.finalNode);
         }
 
         static private void DrawLinks(Routine routine)
@@ -55,8 +58,6 @@ namespace TriggerEditor
                     DrawLink(node.inputs[j]);
                 }
             }
-
-            DrawLink(routine.finalNode.inputs[0]);
         }
 
         static private void DrawLink(NodeValue input)
@@ -149,8 +150,6 @@ namespace TriggerEditor
 
         static public Node GetNodeAtPosition(Routine routine, Vector2 position)
         {
-            if (NodeView.GetDragRect(routine.finalNode).Contains(position)) return routine.finalNode;
-
             if (routine.nodes == null) return null;
             for(int i = routine.nodes.Length - 1; i >= 0 ; i--)
             {
@@ -163,11 +162,6 @@ namespace TriggerEditor
         static public NodeValue GetConnectorAtPosition(Routine routine, Vector2 position)
         {
             if (routine.nodes == null) return null;
-
-            if(NodeView.GetConnectorRect(routine.finalNode.inputs[0]).Contains(position))
-            {
-                return routine.finalNode.inputs[0];
-            }
 
             for (int i = routine.nodes.Length - 1; i >= 0; i--)
             {
@@ -220,6 +214,16 @@ namespace TriggerEditor
                 GenericMenu menu = new GenericMenu();
                 if(clickedNode != routine.finalNode)
                 {
+                    if(routine.NodeEligibleAsFinal(clickedNode))
+                    {
+                        SetNodeFinalCallbackObject setNodeFinalCallbackObject = new SetNodeFinalCallbackObject
+                        {
+                            routine = routine,
+                            newFinalNode = clickedNode
+                        };
+                        menu.AddItem(new GUIContent("Set as Final node"), false, SetNodeAsFinalNode, setNodeFinalCallbackObject);
+                    }
+
                     DeleteNodeCallbackObject deleteNodeCallbackObject = new DeleteNodeCallbackObject
                     {
                         routine = routine,
@@ -229,6 +233,12 @@ namespace TriggerEditor
                 }
                 menu.ShowAsContext();
             }
+        }
+
+        static private void SetNodeAsFinalNode(object obj)
+        {
+            SetNodeFinalCallbackObject setNodeFinalCallbackObject = (SetNodeFinalCallbackObject)obj;
+            setNodeFinalCallbackObject.routine.finalNode = setNodeFinalCallbackObject.newFinalNode;
         }
 
         static private void DeleteNodeCallback(object obj)

@@ -60,7 +60,8 @@ namespace TriggerEditor
             int triggerIndex = 0;
             for (int i = 0; i < triggerNames.Length; i++)
             {
-                if (triggerNames[i] == variantData.GetData<Trigger>().name)
+                Trigger tmp = variantData.GetData<Trigger>();
+                if ((tmp != null) && (triggerNames[i] == tmp.name))
                 {
                     triggerIndex = i;
                 }

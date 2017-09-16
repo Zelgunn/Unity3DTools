@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.Text;
 
 namespace TriggerEditor
 {
@@ -20,7 +21,8 @@ namespace TriggerEditor
         #region Draw Node frame
         static private void DrawFrame(Node node)
         {
-            DrawNodeFrame(node.rect, s_cornerSize, Node.nodeTopSize, Color.black, new Color(0.5f, 0.5f, 0.5f, 1), new Color(0.45f, 0.45f, 0.45f, 1));
+            Color frameColor = node.isFinalNode ? Color.green : Color.black;
+            DrawNodeFrame(node.rect, s_cornerSize, Node.nodeTopSize, frameColor, new Color(0.5f, 0.5f, 0.5f, 1), new Color(0.45f, 0.45f, 0.45f, 1));
             EditorGUIUtility.AddCursorRect(GetDragRect(node), MouseCursor.MoveArrow);
         }
 
@@ -112,6 +114,8 @@ namespace TriggerEditor
             DrawCircle(connectorPosition, nodeValue.variantValue.typeColor);
             EditorGUIUtility.AddCursorRect(GetConnectorRect(nodeValue), MouseCursor.ArrowPlus);
 
+            string nodeValueLabel = NodeValueLabel(nodeValue);
+
             float width = nodeRect.width - s_connectorDiameter * 2;
             if (nodeValue.isOutput)
             {
@@ -121,26 +125,63 @@ namespace TriggerEditor
 
                 if (index >= 1)
                 {
-                    EditorGUI.LabelField(labelRect, nodeValue.name, outputNameStyle);
+                    EditorGUI.LabelField(labelRect, nodeValueLabel, outputNameStyle);
                 }
             }
-            else if (nodeValue.connection == null)
+            else
             {
-                Rect variantArea = new Rect(connectorPosition + new Vector2(Node.connectorSpacing / 2 + 2, -Node.connectorSpacing / 2), new Vector2(width, Node.connectorSpacing));
-                GUILayout.BeginArea(variantArea);
+                GUIStyle inputNameStyle = new GUIStyle(EditorStyles.label);
+                inputNameStyle.alignment = TextAnchor.MiddleLeft;
+                float nameWidth = inputNameStyle.CalcSize(new GUIContent(nodeValueLabel)).x;
 
-                EditorGUI.BeginChangeCheck();
-
-                Variant tmp = new Variant(VariantView.VariantDataField(nodeValue.variantValue.variantData), nodeValue.variantValue.typeName);
-                if (tmp != nodeValue.variantValue)
+                Rect variantArea = new Rect(connectorPosition + new Vector2(Node.connectorSpacing / 2 + 2, -Node.connectorSpacing / 2), new Vector2(width - nameWidth, Node.connectorSpacing));
+                Rect labelRect;
+                if (nodeValue.connection == null)
                 {
-                    Undo.RecordObject(nodeValue, "Changed node value");
-                    nodeValue.variantValue = tmp;
-                    TriggerEditorWindow.SetSceneDirty();
+                    labelRect = variantArea;
+                    labelRect.x += width - nameWidth;
+                }
+                else
+                {
+                    labelRect = new Rect(connectorPosition + new Vector2(Node.connectorSpacing / 2 + 2, -Node.connectorSpacing / 2), new Vector2(width, Node.connectorSpacing));
                 }
 
-                GUILayout.EndArea();
+                EditorGUI.LabelField(labelRect, nodeValueLabel, inputNameStyle);
+
+                if (nodeValue.connection == null)
+                {
+                    GUILayout.BeginArea(variantArea);
+                    EditorGUI.BeginChangeCheck();
+
+                    Variant tmp = new Variant(VariantView.VariantDataField(nodeValue.variantValue.variantData), nodeValue.variantValue.typeName);
+                    if (tmp != nodeValue.variantValue)
+                    {
+                        Undo.RecordObject(nodeValue, "Changed node value");
+                        nodeValue.variantValue = tmp;
+                        TriggerEditorWindow.SetSceneDirty();
+                    }
+
+                    GUILayout.EndArea();
+                }
             }
+        }
+
+        static public string NodeValueLabel(NodeValue nodeValue)
+        {
+            StringBuilder result = new StringBuilder(nodeValue.name);
+
+            if (result.Length == 0) return string.Empty;
+
+            result[0] = char.ToUpper(result[0]);
+            for(int i = 1; i < result.Length; i++)
+            {
+                if(char.IsUpper(result[i]))
+                {
+                    result.Insert(i++, ' ');
+                }
+            }
+
+            return result.ToString();
         }
 
         static public Vector2 GetConnectorPosition(NodeValue nodeValue)

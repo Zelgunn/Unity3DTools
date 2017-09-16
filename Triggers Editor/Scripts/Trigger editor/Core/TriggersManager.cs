@@ -86,6 +86,8 @@ namespace TriggerEditor
 
         private IEnumerator ProcessTriggerActionsCoroutine(Trigger trigger)
         {
+            if (!trigger.enabled) yield break;
+
             Routine[] actions = trigger.actions;
             for (int i = 0; i < actions.Length; i++)
             {
@@ -157,22 +159,28 @@ namespace TriggerEditor
         }
 
         #region Node methods
-        [NodeMethod("Time", "Scene starts",  "Boolean")]
+        [NodeMethod("Time", "Scene starts", NodeMethodType.Event, "Boolean")]
         static public bool SceneStarts()
         {
             return !s_sceneInitialized;
         }
 
-        [NodeMethod("Time", "Scene initialized",  "Boolean")]
+        [NodeMethod("Time", "Scene initialized", NodeMethodType.Condition, "Boolean")]
         static public bool SceneInitialized()
         {
             return s_sceneInitialized;
         }
 
-        [NodeMethod("Triggers", "Run trigger")]
+        [NodeMethod("Triggers", "Run trigger", NodeMethodType.Action)]
         public void RunTrigger(Trigger trigger)
         {
             ProcessTriggerActions(trigger);
+        }
+
+        [NodeMethod("Time", "Every frame", NodeMethodType.Event)]
+        static public bool EveryFrame()
+        {
+            return true;
         }
         #endregion
 

@@ -12,6 +12,8 @@ Some tools for Unity3D
 	2) Conditions : When a triggers starts, it will stops if one or more of the conditions is false
 	3) Actions : If all conditions are met, the trigger will do its actions
   
+  ![Alt text](Triggers Editor\Illustrations\Screenshot.png)
+  
   Events, conditions and actions are made of nodes, for an intuitive and easy customization.
   If you want to make your own components, just use the attribute [NodeMethod] before your functions and they will appear in the editor.
   Components belong to categories (specified in the attribute), if you want to use your own categories, create a Node Category asset (with the same name).

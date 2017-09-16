@@ -173,7 +173,7 @@ namespace TriggerEditor
             ParameterInfo[] methodParametersInfos = methodInfo.GetParameters();
             object[] parameterValues = new object[methodParametersInfos.Length];
 
-            int inputIndex = 0;
+            int inputIndex = methodInfo.IsStatic ? 0 : 1;
             for (int i = 0; i < methodParametersInfos.Length; i++)
             {
                 if (methodParametersInfos[i].IsOut)
@@ -264,12 +264,12 @@ namespace TriggerEditor
 
         protected void RetrieveMethodInfo()
         {
-            Type[] methodTypes = new Type[m_methodParametersTypesNames.Length];
+            Type[] NodeMethodTypes = new Type[m_methodParametersTypesNames.Length];
             for (int i = 0; i < m_methodParametersTypesNames.Length; i++)
             {
-                methodTypes[i] = Type.GetType(m_methodParametersTypesNames[i]);
+                NodeMethodTypes[i] = Type.GetType(m_methodParametersTypesNames[i]);
             }
-            m_methodInfo = Type.GetType(m_methodDeclaringTypeName).GetMethod(m_methodName, methodTypes);
+            m_methodInfo = Type.GetType(m_methodDeclaringTypeName).GetMethod(m_methodName, NodeMethodTypes);
         }
 
         protected void RetrieveNodeMethodAttribute()
@@ -376,27 +376,30 @@ namespace TriggerEditor
         }
     }
 
+    public enum NodeMethodType
+    {
+        Event = 1,
+        Condition = 2,
+        Action = 4,
+        Other = 8
+    }
+
     public class NodeMethodAttribute : Attribute
     {
-        public enum MethodType
-        {
-            Action,
-            Test,
-            Any
-        }
-
-        [SerializeField] private string m_name;
         [SerializeField] private string m_category;
+        [SerializeField] private string m_name;
+        [SerializeField] private NodeMethodType m_type;
         [SerializeField] private string m_outputName;
 
-        public NodeMethodAttribute(string category, string name, string outputName = "Output")
+        public NodeMethodAttribute(string category, string name, NodeMethodType type, string outputName = "Output")
         {
-            m_name = name;
             m_category = category;
+            m_name = name;
+            m_type = type;
             m_outputName = outputName;
         }
 
-        static public MethodInfo[] GetNodeMethods(out NodeMethodAttribute[] nodeMethodsAttribute, MethodType filter)
+        static public MethodInfo[] GetNodeMethods(out NodeMethodAttribute[] nodeMethodsAttribute, NodeMethodType filter)
         {
             List<MethodInfo> resultMethodsInfo = new List<MethodInfo>();
             List<NodeMethodAttribute> resultAttributes = new List<NodeMethodAttribute>();
@@ -413,14 +416,17 @@ namespace TriggerEditor
                         continue;
                     }
 
-                    if ((filter == MethodType.Action) && !IsActionType(methodInfo.ReturnType)) continue;
-                    if ((filter == MethodType.Test) && !IsTestType(methodInfo.ReturnType)) continue;
-
                     object[] methodAttributes = methodInfo.GetCustomAttributes(typeof(NodeMethodAttribute), true);
                     if (methodAttributes.Length > 0)
                     {
+                        NodeMethodAttribute nodeMethodAttribute = (NodeMethodAttribute)methodAttributes[0];
+                        if((nodeMethodAttribute.m_type & filter) != nodeMethodAttribute.m_type)
+                        {
+                            continue;
+                        }
+
                         resultMethodsInfo.Add(methodInfo);
-                        resultAttributes.Add((NodeMethodAttribute) methodAttributes[0]);
+                        resultAttributes.Add(nodeMethodAttribute);
                     }
                 }
             }
@@ -440,14 +446,24 @@ namespace TriggerEditor
         }
 
         #region Accessors
+        public string category
+        {
+            get { return m_category; }
+        }
+
         public string name
         {
             get { return m_name; }
         }
 
-        public string category
+        public NodeMethodType type
         {
-            get { return m_category; }
+            get { return m_type; }
+        }
+
+        static public NodeMethodType anyMethodType
+        {
+            get { return NodeMethodType.Action | NodeMethodType.Condition | NodeMethodType.Event | NodeMethodType.Other; }
         }
 
         public string outputName

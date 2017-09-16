@@ -2,6 +2,7 @@
 using System.Collections;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace TriggerEditor
 {
@@ -25,9 +26,9 @@ namespace TriggerEditor
             return null;
         }
 
-        public void CreateRoutine(string routineName, Routine.RoutineType type)
+        public void CreateRoutine(MethodInfo finalNodeMethodInfo, string routineName, Routine.RoutineType type)
         {
-            Routine newRoutine = Routine.CreateRoutine(routineName, type);
+            Routine newRoutine = Routine.CreateRoutine(finalNodeMethodInfo, routineName, type);
             AddRoutine(newRoutine);
         }
 
@@ -132,10 +133,10 @@ namespace TriggerEditor
             routines[index2] = tmp;
         }
 
-        [NodeMethod("Triggers", "Turn on|off")]
-        public void TurnOnOff(bool on)
+        [NodeMethod("Triggers", "Turn on|off", TriggerEditor.NodeMethodType.Action)]
+        static public void TurnOnOff(Trigger trigger, bool on)
         {
-            m_enabled = on;
+            trigger.m_enabled = on;
         }
 
         #region Accessors

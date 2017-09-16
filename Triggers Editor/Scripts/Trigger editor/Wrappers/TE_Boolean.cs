@@ -5,7 +5,7 @@ namespace TriggerEditor
 {
     static public class TE_Boolean
     {
-        [NodeMethod("Boolean", "If, then, else",  "Boolean")]
+        [NodeMethod("Boolean", "If, then, else", NodeMethodType.Action, "Boolean")]
         static public void IfThenDoElseDo(bool test, Node ifTrue, Node ifFalse)
         {
             if (test)
@@ -18,10 +18,16 @@ namespace TriggerEditor
             }
         }
 
-        [NodeMethod("Boolean", "If, then X, else Y", "X/Y")]
+        [NodeMethod("Boolean", "If, then X, else Y", NodeMethodType.Other, "X/Y")]
         static public object IfThenDoElseDo(bool test, object ifTrue, object ifFalse)
         {
             return test ? ifTrue : ifFalse;
+        }
+
+        [NodeMethod("Boolean", "Not", NodeMethodType.Condition)]
+        static public bool Not(bool boolean)
+        {
+            return !boolean;
         }
     }
 }

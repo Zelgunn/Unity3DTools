@@ -21,12 +21,12 @@ namespace TriggerEditor
 
         [SerializeField] private Vector2 m_viewCenter;
 
-        static public Routine CreateRoutine(string name, RoutineType type)
+        static public Routine CreateRoutine(MethodInfo finalNodeMethodInfo, string name, RoutineType type)
         {
             Routine routine = CreateInstance<Routine>();
             routine.m_type = type;
             routine.name = name;
-            routine.CreateFinalNode();
+            routine.CreateFinalNode(finalNodeMethodInfo);
 
             return routine;
         }
@@ -42,10 +42,6 @@ namespace TriggerEditor
             List<NodeValue> previousNodeValueMap = new List<NodeValue>();
             List<NodeValue> newNodeValueMap = new List<NodeValue>();
 
-            clone.m_finalNode = m_finalNode.CloneToRoutine(clone);
-            previousNodeValueMap.AddRange(m_finalNode.GetAllNodeValues());
-            newNodeValueMap.AddRange(clone.m_finalNode.GetAllNodeValues());
-
             Node[] clonedNodes = null;
             if (m_nodes != null)
             {
@@ -53,12 +49,14 @@ namespace TriggerEditor
                 for(int i = 0; i < m_nodes.Length; i++)
                 {
                     clonedNodes[i] = m_nodes[i].CloneToRoutine(clone);
+                    if(clonedNodes[i] == m_finalNode)
+                    {
+                        clone.m_finalNode = m_nodes[i].CloneToRoutine(clone);
+                    }
 
                     previousNodeValueMap.AddRange(m_nodes[i].GetAllNodeValues());
                     newNodeValueMap.AddRange(clonedNodes[i].GetAllNodeValues());
                 }
-
-                clone.m_finalNode.ReMapConnections(previousNodeValueMap, newNodeValueMap);
 
                 for (int i = 0; i < clonedNodes.Length; i++)
                 {
@@ -71,23 +69,10 @@ namespace TriggerEditor
             return clone;
         }
 
-        public void CreateFinalNode()
+        public void CreateFinalNode(MethodInfo finalNodeMethodInfo)
         {
-            MethodInfo methodInfo = null;
-            switch (m_type)
-            {
-                case RoutineType.Event:
-                    methodInfo = typeof(Routine).GetMethod("EventOutput");
-                    break;
-                case RoutineType.Condition:
-                    methodInfo = typeof(Routine).GetMethod("ConditionOutput");
-                    break;
-                case RoutineType.Action:
-                    methodInfo = typeof(Routine).GetMethod("ActionOutput");
-                    break;
-            }
-
-            m_finalNode = Node.CreateNode(methodInfo, this);
+            m_finalNode = Node.CreateNode(finalNodeMethodInfo, this);
+            m_nodes = new Node[] { m_finalNode };
         }
 
         public object Evaluate()
@@ -120,6 +105,7 @@ namespace TriggerEditor
 
         public void RemoveNode(Node node)
         {
+            if (node == m_finalNode) m_finalNode = null;
             if (m_nodes == null) return;
             List<Node> nodes = new List<Node>(m_nodes);
             nodes.Remove(node);
@@ -140,8 +126,6 @@ namespace TriggerEditor
 
                 Disconnect(node, otherNode);
             }
-
-            Disconnect(node, m_finalNode);
         }
 
         public void Disconnect(Node outputNode, Node inputNode)
@@ -175,6 +159,7 @@ namespace TriggerEditor
         public Node finalNode
         {
             get { return m_finalNode; }
+            set { m_finalNode = value; }
         }
 
         public RoutineType type
@@ -183,24 +168,42 @@ namespace TriggerEditor
         }
         #endregion
 
-        #region Final nodes method
-        [NodeMethod("Hidden_FinalNode", "Event output",  "")]
-        static public bool EventOutput(bool result)
+        static public RoutineType GetRoutineTypeFromNode(NodeMethodAttribute node)
         {
-            return result;
+            switch(node.type)
+            {
+                case NodeMethodType.Event:
+                    return RoutineType.Event;
+                case NodeMethodType.Condition:
+                    return RoutineType.Condition;
+                case NodeMethodType.Action:
+                    return RoutineType.Action;
+                case NodeMethodType.Other:
+                    throw new Exception("Other is not a suitable type for a Routine");
+                default:
+                    if(((NodeMethodType.Event) & node.type) == NodeMethodType.Event)
+                    {
+                        return RoutineType.Event;
+                    }
+                    else if (((NodeMethodType.Condition) & node.type) == NodeMethodType.Condition)
+                    {
+                        return RoutineType.Condition;
+                    }
+                    else if (((NodeMethodType.Action) & node.type) == NodeMethodType.Action)
+                    {
+                        return RoutineType.Action;
+                    }
+                    else
+                    {
+                        throw new Exception("Node type is not a suitable type for a Routine");
+                    }
+            }
         }
 
-        [NodeMethod("Hidden_FinalNode", "Condition output",  "")]
-        static public bool ConditionOutput(bool result)
+        public bool NodeEligibleAsFinal(Node node)
         {
-            return result;
+            if (node.nodeMethodAttribute.type == NodeMethodType.Other) return false;
+            return m_type == GetRoutineTypeFromNode(node.nodeMethodAttribute);
         }
-
-        [NodeMethod("Hidden_FinalNode", "Action output",  "")]
-        static public IEnumerator ActionOutput(Node nodeValue)
-        {
-            return (IEnumerator) nodeValue.Evaluate();
-        }
-        #endregion
     }
 }

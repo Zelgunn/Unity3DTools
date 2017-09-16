@@ -27,12 +27,21 @@ namespace TriggerEditor
         public enum ButtonAnswer
         {
             NoButton,
-            Add,
+            Insert,
             Modify,
             Delete,
             MoveUp,
             MoveDown,
-            Duplicate
+            Duplicate,
+            Add
+        }
+
+        public enum DisplayedNodeType
+        {
+            All,
+            Events,
+            Conditions,
+            Actions
         }
 
         private Dictionary<ButtonAnswer, Texture2D> m_buttonIcons;
@@ -54,11 +63,10 @@ namespace TriggerEditor
         private bool m_resizingRightPanel = false;
         private Vector2 m_rightPanelScroolViewPosition;
         private int m_currentNodeCategoryIndex = 0;
-        private bool m_onlyShowMatchingMethod = false;
+        private DisplayedNodeType m_shownNodeTypes = DisplayedNodeType.All;
         #endregion
 
         #region Top panel
-        [SerializeField] private string m_newRoutineName;
         private bool m_resizingTopPanel = false;
         private Vector2 m_topPanelScroolViewPosition;
         private bool m_routineFoldoutEvents = true;
@@ -78,7 +86,8 @@ namespace TriggerEditor
 
         private NodeSetData m_defaultNodeSet;
         private NodeSetData m_actionNodeSet;
-        private NodeSetData m_testNodeSet;
+        private NodeSetData m_conditionNodeSet;
+        private NodeSetData m_eventNodeSet;
 
         private Dictionary<string, NodeCategory> m_categoriesData;
 
@@ -114,12 +123,13 @@ namespace TriggerEditor
             m_buttonIcons = new Dictionary<ButtonAnswer, Texture2D>();
             m_buttonTooltips = new Dictionary<ButtonAnswer, string>();
 
-            AddButtonInfo(ButtonAnswer.Add, "Buttons/AddIcon.png", "Add");
+            AddButtonInfo(ButtonAnswer.Insert, "Buttons/InsertIcon.png", "Insert");
             AddButtonInfo(ButtonAnswer.Modify, "Buttons/ModifyIcon.png", "Edit");
             AddButtonInfo(ButtonAnswer.Delete, "Buttons/DeleteIcon.png", "Delete");
             AddButtonInfo(ButtonAnswer.MoveUp, "Buttons/MoveUpIcon.png", "Move up");
             AddButtonInfo(ButtonAnswer.MoveDown, "Buttons/MoveDownIcon.png", "Move down");
             AddButtonInfo(ButtonAnswer.Duplicate, "Buttons/DuplicateIcon.png", "Duplicate");
+            AddButtonInfo(ButtonAnswer.Add, "Buttons/AddIcon.png", "Add");
             AddButtonInfo(ButtonAnswer.NoButton, "", "");
         }
 
@@ -131,12 +141,13 @@ namespace TriggerEditor
 
         private void InitializeNodeMethods()
         {
-            m_defaultNodeSet = RetrieveNodeMethods(NodeMethodAttribute.MethodType.Any);
-            m_actionNodeSet = RetrieveNodeMethods(NodeMethodAttribute.MethodType.Action);
-            m_testNodeSet = RetrieveNodeMethods(NodeMethodAttribute.MethodType.Test);
+            m_defaultNodeSet = RetrieveNodeMethods(NodeMethodAttribute.anyMethodType);
+            m_actionNodeSet = RetrieveNodeMethods(NodeMethodType.Action);
+            m_conditionNodeSet = RetrieveNodeMethods(NodeMethodType.Condition);
+            m_eventNodeSet = RetrieveNodeMethods(NodeMethodType.Event);
         }
 
-        static private NodeSetData RetrieveNodeMethods(NodeMethodAttribute.MethodType filter)
+        static private NodeSetData RetrieveNodeMethods(NodeMethodType filter)
         {
             NodeMethodAttribute[] nodeMethodsAttribute;
             MethodInfo[] nodeMethodsInfo = NodeMethodAttribute.GetNodeMethods(out nodeMethodsAttribute, filter);
@@ -259,6 +270,7 @@ namespace TriggerEditor
 
         protected void DrawTriggerLink(Trigger trigger)
         {
+            Trigger currentTrigger = m_selectedTrigger;
             switch (DrawLabeledIconButtons(trigger.name, true, ButtonAnswer.Modify, ButtonAnswer.Delete))
             {
                 case ButtonAnswer.Modify:
@@ -273,6 +285,11 @@ namespace TriggerEditor
                         m_selectedRoutine = null;
                     }
                     break;
+            }
+
+            if(m_selectedTrigger != currentTrigger)
+            {
+                m_selectedRoutine = null;
             }
         }
 
@@ -297,7 +314,7 @@ namespace TriggerEditor
             EditorGUI.DrawRect(rightPanelRect, s_sidePanelsColor);
             GUILayout.BeginArea(rightPanelRect);
             m_rightPanelScroolViewPosition = EditorGUILayout.BeginScrollView(m_rightPanelScroolViewPosition);
-            EditorGUI.BeginDisabledGroup(m_selectedRoutine == null);
+            EditorGUI.BeginDisabledGroup(m_selectedTrigger == null);
 
             DrawNodeBrowser();
 
@@ -310,31 +327,59 @@ namespace TriggerEditor
         {
             EditorGUILayout.LabelField("Node browser", EditorStyles.boldLabel);
 
-            if(m_selectedRoutine != null)
-            {
-                string matchingMethodText = (m_selectedRoutine.type == Routine.RoutineType.Action) ? "Only show actions" : "Only show tests";
-                m_onlyShowMatchingMethod = EditorGUILayout.Toggle(matchingMethodText, m_onlyShowMatchingMethod);
-            }
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Show :", GUILayout.Width(48));
+            m_shownNodeTypes = (DisplayedNodeType)EditorGUILayout.EnumPopup(m_shownNodeTypes);
+            EditorGUILayout.EndHorizontal();
 
             GUIContent[] categories = GetCategoriesAsGUIContents();
             m_currentNodeCategoryIndex = EditorGUILayout.Popup(m_currentNodeCategoryIndex, categories, GetCategoryGUIStyle(), GUILayout.Height(32));
             if (m_currentNodeCategoryIndex >= currentSet.nodeMethodsAttributes.Length) m_currentNodeCategoryIndex = 0;
 
             NodeMethodAttribute[] displayedNodes = currentSet.nodeMethodsAttributes[m_currentNodeCategoryIndex];
-            MethodInfo nodeToAddMethod = null;
+            MethodInfo selectedNode = null;
 
             for (int i = 0; i < displayedNodes.Length; i++)
             {
-                if(DrawLabeledIconButtons(displayedNodes[i].name, true, ButtonAnswer.Add) == ButtonAnswer.Add)
+                switch(DrawLabeledIconButtons(displayedNodes[i].name, true, GetNodeButtons(displayedNodes[i])))
                 {
-                    nodeToAddMethod = currentSet.nodeMethods[m_currentNodeCategoryIndex][i];
+                    case ButtonAnswer.Insert:
+                        selectedNode = currentSet.nodeMethods[m_currentNodeCategoryIndex][i];
+                        m_selectedRoutine.AddNode(selectedNode);
+                        SetSceneDirty();
+                        break;
+                    case ButtonAnswer.Add:
+                        selectedNode = currentSet.nodeMethods[m_currentNodeCategoryIndex][i];
+                        m_selectedTrigger.CreateRoutine(selectedNode, displayedNodes[i].name, Routine.GetRoutineTypeFromNode(displayedNodes[i]));
+                        SetSceneDirty();
+                        break;
                 }
             }
+        }
 
-            if(nodeToAddMethod != null)
+        protected ButtonAnswer[] GetNodeButtons(NodeMethodAttribute node)
+        {
+            if(node.type == NodeMethodType.Other)
             {
-                m_selectedRoutine.AddNode(nodeToAddMethod);
-                SetSceneDirty();
+                if(m_selectedRoutine == null)
+                {
+                    return new ButtonAnswer[] { };
+                }
+                else
+                {
+                    return new ButtonAnswer[] { ButtonAnswer.Insert };
+                }
+            }
+            else
+            {
+                if (m_selectedRoutine == null)
+                {
+                    return new ButtonAnswer[] { ButtonAnswer.Add };
+                }
+                else
+                {
+                    return new ButtonAnswer[] { ButtonAnswer.Add, ButtonAnswer.Insert };
+                }
             }
         }
         #endregion
@@ -382,35 +427,36 @@ namespace TriggerEditor
                 return;
             }
 
-            DrawRoutineList(Routine.RoutineType.Event, ref m_routineFoldoutEvents);
-            DrawRoutineList(Routine.RoutineType.Condition, ref m_routineFoldoutConditions);
-            DrawRoutineList(Routine.RoutineType.Action, ref m_routineFoldoutActions);
+            float routineSpacing = 20;
+            float defaultSpacing = 18;
+
+            float offset = defaultSpacing * 3 + 2f;
+            DrawRoutineList(Routine.RoutineType.Event, offset, ref m_routineFoldoutEvents);
+            if (m_routineFoldoutEvents) offset += m_selectedTrigger.GetRoutines(Routine.RoutineType.Event).Length * routineSpacing;
+            offset += defaultSpacing;
+
+            DrawRoutineList(Routine.RoutineType.Condition, offset, ref m_routineFoldoutConditions);
+            if (m_routineFoldoutConditions) offset += m_selectedTrigger.GetRoutines(Routine.RoutineType.Condition).Length * routineSpacing;
+            offset += defaultSpacing;
+
+            DrawRoutineList(Routine.RoutineType.Action, offset, ref m_routineFoldoutActions);
 
             GUILayout.Space(16);
             DrawCreateRoutine();
         }
 
-        protected void DrawRoutineList(Routine.RoutineType listType, ref bool foldout)
+        protected void DrawRoutineList(Routine.RoutineType listType, float rectOffset, ref bool foldout)
         {
             foldout = EditorGUILayout.Foldout(foldout, listType.ToString() + "s");
             if (foldout)
             {
-                DrawRoutineList(listType);
+                DrawRoutineList(listType, rectOffset);
             }
         }
 
-        protected void DrawRoutineList(Routine.RoutineType listType)
+        protected void DrawRoutineList(Routine.RoutineType listType, float rectOffset)
         {
             EditorGUI.indentLevel++;
-
-            float rectOffset = (3 + (int)listType) * 18f + 2f;
-            int previousCount = 0;
-            for(int i = 0; i < (int)listType; i++)
-            {
-                Routine[] tmpRoutines = m_selectedTrigger.GetRoutines((Routine.RoutineType)i);
-                previousCount += (tmpRoutines == null) ? 0 : tmpRoutines.Length;
-            }
-            rectOffset += 20f * previousCount;
 
             Routine[] routines = m_selectedTrigger.GetRoutines(listType);
             if (routines != null)
@@ -427,20 +473,19 @@ namespace TriggerEditor
 
         protected void DrawRoutineLine(Routine routine, float rectOffset, int routineIndex)
         {
-            NodeValue routineLastConnector = routine.finalNode.inputs[0].connection;
             Texture2D routineIcon = null;
-            if (routineLastConnector != null)
+            if (routine.finalNode != null)
             {
-                MethodInfo nodeMethodInfo = routineLastConnector.node.methodInfo;
+                MethodInfo nodeMethodInfo = routine.finalNode.methodInfo;
                 if(nodeMethodInfo == null)
                 {
-                    routine.RemoveNode(routineLastConnector.node);
+                    routine.RemoveNode(routine.finalNode);
                     return;
                 }
-                NodeMethodAttribute nodeMethodAttribute = routineLastConnector.node.nodeMethodAttribute;
+                NodeMethodAttribute nodeMethodAttribute = routine.finalNode.nodeMethodAttribute;
                 if (nodeMethodAttribute == null)
                 {
-                    routine.RemoveNode(routineLastConnector.node);
+                    routine.RemoveNode(routine.finalNode);
                     return;
                 }
 
@@ -486,39 +531,16 @@ namespace TriggerEditor
 
         protected void DrawCreateRoutine()
         {
-            m_newRoutineName = EditorGUILayout.TextField("Create routine :", m_newRoutineName);
-            EditorGUI.BeginDisabledGroup((m_newRoutineName.Length == 0) || m_selectedTrigger.ContainsRoutine(m_newRoutineName));
-
-            EditorGUILayout.BeginHorizontal();
-
-            DrawCreateRoutine(Routine.RoutineType.Event);
-            DrawCreateRoutine(Routine.RoutineType.Condition);
-            DrawCreateRoutine(Routine.RoutineType.Action);
-
             EditorGUI.BeginDisabledGroup(m_selectedRoutine == null);
-            if (GUILayout.Button("Rename selected"))
+            if(m_selectedRoutine != null)
             {
-                Undo.RegisterCompleteObjectUndo(m_selectedRoutine, "Rename routine");
-                Undo.FlushUndoRecordObjects();
-                m_selectedRoutine.name = m_newRoutineName;
-                m_newRoutineName = string.Empty;
-                SetSceneDirty();
+                m_selectedRoutine.name = EditorGUILayout.TextField("Routine name :", m_selectedRoutine.name);
+            }
+            else
+            {
+                EditorGUILayout.TextField("Routine name :", string.Empty);
             }
             EditorGUI.EndDisabledGroup();
-
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUI.EndDisabledGroup();
-        }
-
-        protected void DrawCreateRoutine(Routine.RoutineType routineType)
-        {
-            if (GUILayout.Button("Create " + routineType.ToString()))
-            {
-                m_selectedTrigger.CreateRoutine(m_newRoutineName, routineType);
-                m_newRoutineName = string.Empty;
-                GUI.FocusControl("Dummy");
-            }
         }
         #endregion
 
@@ -855,9 +877,17 @@ namespace TriggerEditor
         {
             get
             {
-                if (!m_onlyShowMatchingMethod || (m_selectedRoutine == null)) return m_defaultNodeSet;
-                else if (m_selectedRoutine.type == Routine.RoutineType.Action) return m_actionNodeSet;
-                else return m_testNodeSet;
+                switch(m_shownNodeTypes)
+                {
+                    case DisplayedNodeType.Events:
+                        return m_eventNodeSet;
+                    case DisplayedNodeType.Conditions:
+                        return m_conditionNodeSet;
+                    case DisplayedNodeType.Actions:
+                        return m_actionNodeSet;
+                    default:
+                        return m_defaultNodeSet;
+                }
             }
         }
         #endregion
