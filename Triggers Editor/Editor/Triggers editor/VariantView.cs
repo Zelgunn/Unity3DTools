@@ -42,6 +42,14 @@ namespace TriggerEditor
             {
                 return new VariantData(EditorGUILayout.Vector4Field("", variantData.GetData<Vector4>()), typeof(Vector4));
             }
+            else if (variantType == typeof(Quaternion))
+            {
+                Quaternion quaternion = variantData.GetData<Quaternion>();
+                Vector4 buffer = new Vector4(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+                buffer = EditorGUILayout.Vector4Field("", buffer);
+                quaternion = new Quaternion(buffer[0], buffer[1], buffer[2], buffer[3]);
+                return new VariantData(quaternion, typeof(Quaternion));
+            }
             else if (variantType.IsEnum)
             {
                 return new VariantData(EditorGUILayout.EnumPopup(variantData.GetData<Enum>()), variantType);

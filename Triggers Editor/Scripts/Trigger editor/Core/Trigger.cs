@@ -26,6 +26,18 @@ namespace TriggerEditor
             return null;
         }
 
+        public int GetRoutinesCount(Routine.RoutineType type)
+        {
+            switch (type)
+            {
+                case Routine.RoutineType.Event: return m_events == null ? 0 : m_events.Length;
+                case Routine.RoutineType.Condition: return m_conditions == null ? 0 : m_conditions.Length;
+                case Routine.RoutineType.Action: return m_actions == null ? 0 : m_actions.Length;
+            }
+
+            return 0;
+        }
+
         public void CreateRoutine(MethodInfo finalNodeMethodInfo, string routineName, Routine.RoutineType type)
         {
             Routine newRoutine = Routine.CreateRoutine(finalNodeMethodInfo, routineName, type);

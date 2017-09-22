@@ -128,12 +128,13 @@ namespace TriggerEditor
             return methodInfo.Invoke(methodObject, parameters);
         }
 
-        public void Run()
+        public IEnumerator Run()
         {
             object methodObject = GetMethodObjectValue();
             object[] parameters = GetMethodParametersValues();
 
-            methodInfo.Invoke(methodObject, parameters);
+            if(methodInfo.ReturnType == typeof(IEnumerator)) yield return methodInfo.Invoke(methodObject, parameters);
+            else methodInfo.Invoke(methodObject, parameters);
         }
 
         public int GetOutputNodeValueIndex(NodeValue nodeValue)

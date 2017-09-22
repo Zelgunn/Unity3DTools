@@ -28,5 +28,11 @@ namespace TriggerEditor
         {
             return (a.position - b.position).magnitude <= maxDistance;
         }
+
+        [NodeMethod("Map", "Center of map", NodeMethodType.Other)]
+        static public Vector3 CenterOfMap()
+        {
+            return Vector3.zero;
+        }
     }
 }

@@ -295,6 +295,7 @@ namespace TriggerEditor
             MonoBehaviour,
             UnityObject,
             Vector,
+            Quaternion,
             IEnumerator,
             Null,
             Other
@@ -304,6 +305,7 @@ namespace TriggerEditor
 
         [SerializeField] private byte[] m_data;
         [SerializeField] private Vector4 m_vector;
+        [SerializeField] private Quaternion m_quaternion;
         [SerializeField] private UnityEngine.Object m_unityObject;
         [SerializeField] private MonoBehaviour m_monoBehaviour;
         [SerializeField] private IEnumerator m_iEnumator;
@@ -328,6 +330,10 @@ namespace TriggerEditor
                     if (data == null) m_vector = new Vector4();
                     else m_vector = VectorFromObject(data, type);
                     break;
+                case VariantGeneralType.Quaternion:
+                    if (data == null) m_quaternion = new Quaternion();
+                    else m_quaternion = (Quaternion)data;
+                    break;
                 case VariantGeneralType.IEnumerator:
                     m_iEnumator = (IEnumerator)data;
                     break;
@@ -345,6 +351,7 @@ namespace TriggerEditor
             m_unityObject = other.m_unityObject;
             m_monoBehaviour = other.m_monoBehaviour;
             m_vector = other.m_vector;
+            m_quaternion = other.m_quaternion;
             m_iEnumator = other.m_iEnumator;
         }
         #endregion
@@ -379,6 +386,8 @@ namespace TriggerEditor
                         if (vectorType == typeof(Vector2)) return (Vector2)m_vector;
                         else if (vectorType == typeof(Vector3)) return (Vector3)m_vector;
                         else return m_vector;
+                    case VariantGeneralType.Quaternion:
+                        return m_quaternion;
                     case VariantGeneralType.Null:
                         return null;
                     case VariantGeneralType.IEnumerator:
@@ -451,6 +460,11 @@ namespace TriggerEditor
             if ((type == typeof(Vector2)) || (type == typeof(Vector3)) || (type == typeof(Vector4)))
             {
                 return VariantGeneralType.Vector;
+            }
+
+            if (type == typeof(Quaternion))
+            {
+                return VariantGeneralType.Quaternion;
             }
 
             if((type is IEnumerator) || (type == typeof(IEnumerator)))

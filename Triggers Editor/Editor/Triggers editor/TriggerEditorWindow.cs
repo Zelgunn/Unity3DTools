@@ -254,8 +254,7 @@ namespace TriggerEditor
 
             if (triggers != null)
             {
-                int triggerCount = triggers.Length;
-                for (int i = 0; i < triggerCount; i++)
+                for (int i = 0; i < triggers.Length; i++)
                 {
                     if(triggers[i] != null)
                     {
@@ -270,10 +269,13 @@ namespace TriggerEditor
 
         protected void DrawTriggerLink(Trigger trigger)
         {
-            Trigger currentTrigger = m_selectedTrigger;
             switch (DrawLabeledIconButtons(trigger.name, true, ButtonAnswer.Modify, ButtonAnswer.Delete))
             {
                 case ButtonAnswer.Modify:
+                    if(trigger != m_selectedTrigger)
+                    {
+                        m_selectedRoutine = null;
+                    }
                     m_selectedTrigger = trigger;
                     break;
                 case ButtonAnswer.Delete:
@@ -285,11 +287,6 @@ namespace TriggerEditor
                         m_selectedRoutine = null;
                     }
                     break;
-            }
-
-            if(m_selectedTrigger != currentTrigger)
-            {
-                m_selectedRoutine = null;
             }
         }
 
@@ -432,11 +429,11 @@ namespace TriggerEditor
 
             float offset = defaultSpacing * 3 + 2f;
             DrawRoutineList(Routine.RoutineType.Event, offset, ref m_routineFoldoutEvents);
-            if (m_routineFoldoutEvents) offset += m_selectedTrigger.GetRoutines(Routine.RoutineType.Event).Length * routineSpacing;
+            if (m_routineFoldoutEvents) offset += m_selectedTrigger.GetRoutinesCount(Routine.RoutineType.Event) * routineSpacing;
             offset += defaultSpacing;
 
             DrawRoutineList(Routine.RoutineType.Condition, offset, ref m_routineFoldoutConditions);
-            if (m_routineFoldoutConditions) offset += m_selectedTrigger.GetRoutines(Routine.RoutineType.Condition).Length * routineSpacing;
+            if (m_routineFoldoutConditions) offset += m_selectedTrigger.GetRoutinesCount(Routine.RoutineType.Condition) * routineSpacing;
             offset += defaultSpacing;
 
             DrawRoutineList(Routine.RoutineType.Action, offset, ref m_routineFoldoutActions);
@@ -512,11 +509,11 @@ namespace TriggerEditor
                     SetSceneDirty();
                     break;
                 case ButtonAnswer.MoveDown:
-                    m_selectedTrigger.SwapRoutines(routineIndex, (routineIndex + 1) % m_selectedTrigger.GetRoutines(routine.type).Length, routine.type);
+                    m_selectedTrigger.SwapRoutines(routineIndex, (routineIndex + 1) % m_selectedTrigger.GetRoutinesCount(routine.type), routine.type);
                     SetSceneDirty();
                     break;
                 case ButtonAnswer.MoveUp:
-                    m_selectedTrigger.SwapRoutines(routineIndex, (routineIndex == 0) ? m_selectedTrigger.GetRoutines(routine.type).Length - 1 : routineIndex - 1, routine.type);
+                    m_selectedTrigger.SwapRoutines(routineIndex, (routineIndex == 0) ? m_selectedTrigger.GetRoutinesCount(routine.type) - 1 : routineIndex - 1, routine.type);
                     SetSceneDirty();
                     break;
                 case ButtonAnswer.Delete:
