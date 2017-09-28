@@ -502,6 +502,7 @@ namespace TriggerEditor
             switch (DrawLabeledIconButtons(routineNameGUIContent, false, ButtonAnswer.Modify, ButtonAnswer.Duplicate, ButtonAnswer.MoveDown, ButtonAnswer.MoveUp, ButtonAnswer.Delete))
             {
                 case ButtonAnswer.Modify:
+                    if(m_selectedRoutine != routine) GUI.FocusControl("Dummy");
                     m_selectedRoutine = routine;
                     break;
                 case ButtonAnswer.Duplicate:
@@ -518,6 +519,7 @@ namespace TriggerEditor
                     break;
                 case ButtonAnswer.Delete:
                     if (routine == m_selectedRoutine) m_selectedRoutine = null;
+                    GUI.FocusControl("Dummy");
                     m_selectedTrigger.RemoveRoutine(routine);
                     SetSceneDirty();
                     break;

@@ -13,5 +13,7 @@ namespace TriggerEditor
                 yield return action.Run();
             }
         }
+
+        
     }
 }

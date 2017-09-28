@@ -49,9 +49,9 @@ namespace TriggerEditor
                 for(int i = 0; i < m_nodes.Length; i++)
                 {
                     clonedNodes[i] = m_nodes[i].CloneToRoutine(clone);
-                    if(clonedNodes[i] == m_finalNode)
+                    if(m_nodes[i] == m_finalNode)
                     {
-                        clone.m_finalNode = m_nodes[i].CloneToRoutine(clone);
+                        clone.m_finalNode = clonedNodes[i];
                     }
 
                     previousNodeValueMap.AddRange(m_nodes[i].GetAllNodeValues());
