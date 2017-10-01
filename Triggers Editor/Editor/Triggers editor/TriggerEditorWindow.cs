@@ -41,7 +41,8 @@ namespace TriggerEditor
             All,
             Events,
             Conditions,
-            Actions
+            Actions,
+            Others
         }
 
         private Dictionary<ButtonAnswer, Texture2D> m_buttonIcons;
@@ -84,10 +85,11 @@ namespace TriggerEditor
             public NodeMethodAttribute[][] nodeMethodsAttributes;
         }
 
-        private NodeSetData m_defaultNodeSet;
-        private NodeSetData m_actionNodeSet;
-        private NodeSetData m_conditionNodeSet;
-        private NodeSetData m_eventNodeSet;
+        private Dictionary<DisplayedNodeType, NodeSetData> m_nodeSets;
+        //private NodeSetData m_defaultNodeSet;
+        //private NodeSetData m_actionNodeSet;
+        //private NodeSetData m_conditionNodeSet;
+        //private NodeSetData m_eventNodeSet;
 
         private Dictionary<string, NodeCategory> m_categoriesData;
 
@@ -141,10 +143,12 @@ namespace TriggerEditor
 
         private void InitializeNodeMethods()
         {
-            m_defaultNodeSet = RetrieveNodeMethods(NodeMethodAttribute.anyMethodType);
-            m_actionNodeSet = RetrieveNodeMethods(NodeMethodType.Action);
-            m_conditionNodeSet = RetrieveNodeMethods(NodeMethodType.Condition);
-            m_eventNodeSet = RetrieveNodeMethods(NodeMethodType.Event);
+            m_nodeSets = new Dictionary<DisplayedNodeType, NodeSetData>(5);
+            m_nodeSets.Add(DisplayedNodeType.All, RetrieveNodeMethods(NodeMethodAttribute.anyMethodType));
+            m_nodeSets.Add(DisplayedNodeType.Actions, RetrieveNodeMethods(NodeMethodType.Action));
+            m_nodeSets.Add(DisplayedNodeType.Conditions, RetrieveNodeMethods(NodeMethodType.Condition));
+            m_nodeSets.Add(DisplayedNodeType.Events, RetrieveNodeMethods(NodeMethodType.Event));
+            m_nodeSets.Add(DisplayedNodeType.Others, RetrieveNodeMethods(NodeMethodType.Other));
         }
 
         static private NodeSetData RetrieveNodeMethods(NodeMethodType filter)
@@ -326,7 +330,16 @@ namespace TriggerEditor
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Show :", GUILayout.Width(48));
-            m_shownNodeTypes = (DisplayedNodeType)EditorGUILayout.EnumPopup(m_shownNodeTypes);
+            DisplayedNodeType previousDisplayedNodeType = m_shownNodeTypes;
+            previousDisplayedNodeType = (DisplayedNodeType)EditorGUILayout.EnumPopup(previousDisplayedNodeType);
+            if(previousDisplayedNodeType != m_shownNodeTypes)
+            {
+                string currentCategory = currentSet.nodeCategories[m_currentNodeCategoryIndex];
+                m_shownNodeTypes = previousDisplayedNodeType;
+                List<string> newCategories = new List<string>(currentSet.nodeCategories);
+                m_currentNodeCategoryIndex = newCategories.IndexOf(currentCategory);
+                if (m_currentNodeCategoryIndex < 0) m_currentNodeCategoryIndex = 0;
+            }
             EditorGUILayout.EndHorizontal();
 
             GUIContent[] categories = GetCategoriesAsGUIContents();
@@ -876,17 +889,7 @@ namespace TriggerEditor
         {
             get
             {
-                switch(m_shownNodeTypes)
-                {
-                    case DisplayedNodeType.Events:
-                        return m_eventNodeSet;
-                    case DisplayedNodeType.Conditions:
-                        return m_conditionNodeSet;
-                    case DisplayedNodeType.Actions:
-                        return m_actionNodeSet;
-                    default:
-                        return m_defaultNodeSet;
-                }
+                return m_nodeSets[m_shownNodeTypes];
             }
         }
         #endregion
