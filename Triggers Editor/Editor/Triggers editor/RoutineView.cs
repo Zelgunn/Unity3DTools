@@ -37,9 +37,20 @@ namespace TriggerEditor
         {
             if (routine.nodes != null)
             {
+                Node node;
                 for (int i = 0; i < routine.nodes.Length; i++)
                 {
-                    NodeView.Draw(routine.nodes[i]);
+                    node = routine.nodes[i];
+                    if(!node.IsValid())
+                    {
+                        Debug.LogWarning("Node removed : " + node.name + " is no longer valid (" + routine.name + ")");
+                        routine.RemoveNode(node);
+                        i--;
+                    }
+                    else
+                    {
+                        NodeView.Draw(node);
+                    }
                 }
             }
         }

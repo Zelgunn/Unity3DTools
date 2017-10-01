@@ -61,6 +61,26 @@ namespace TriggerEditor
             throw new System.Exception("Unknow math operation");
         }
 
+        [NodeMethod("Convert", "Euler to Rotation", NodeMethodType.Other, "Rotation")]
+        static public Quaternion EulerToRotation(Vector3 angle)
+        {
+            return Quaternion.Euler(angle);
+        }
+
+        [NodeMethod("Convert", "Rotation to Euler", NodeMethodType.Other, "Euler")]
+        static public Vector3 RotationToEuler(Quaternion rotation)
+        {
+            return rotation.eulerAngles;
+        }
+
+        [NodeMethod("Math", "Angle around axis", NodeMethodType.Other, "X")]
+        static public float AngleAroundAxis(Quaternion rotation, out float y, out float z)
+        {
+            y =  rotation.eulerAngles.y;
+            z = rotation.eulerAngles.z;
+            return rotation.eulerAngles.x;
+        }
+
         [NodeMethod("Convert", "Vector3 to XYZ", NodeMethodType.Other, "X")]
         static public float Vector3ToXYZ(Vector3 vector, out float Y, out float Z)
         {

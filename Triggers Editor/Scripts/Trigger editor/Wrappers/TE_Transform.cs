@@ -23,6 +23,24 @@ namespace TriggerEditor
             return transform.position;
         }
 
+        [NodeMethod("Objects", "Rotate by", NodeMethodType.Action)]
+        static public void RotateBy(Transform transform, Quaternion rotation)
+        {
+            transform.rotation *= rotation;
+        }
+
+        [NodeMethod("Objects", "Set rotation", NodeMethodType.Action)]
+        static public void SetRotation(Transform transform, Quaternion rotation)
+        {
+            transform.rotation = rotation;
+        }
+
+        [NodeMethod("Objects", "Rotation of", NodeMethodType.Other)]
+        static public Quaternion GetRotation(Transform transform)
+        {
+            return transform.rotation;
+        }
+
         [NodeMethod("Objects", "A is close to B", NodeMethodType.Condition)]
         static public bool AIsCloseToB(Transform a, Transform b, float maxDistance)
         {

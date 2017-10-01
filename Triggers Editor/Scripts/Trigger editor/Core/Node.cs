@@ -275,11 +275,20 @@ namespace TriggerEditor
 
         protected void RetrieveNodeMethodAttribute()
         {
-            m_nodeMethodAttribute = methodInfo.GetCustomAttributes(typeof(NodeMethodAttribute), true)[0] as NodeMethodAttribute;
+            if (methodInfo == null) return;
+            object[] attributes = methodInfo.GetCustomAttributes(typeof(NodeMethodAttribute), true);
+            if ((attributes == null) || (attributes.Length == 0)) return;
+
+            m_nodeMethodAttribute = attributes[0] as NodeMethodAttribute;
         }
         #endregion
 
         #region Accessors
+        public bool IsValid()
+        {
+            return (methodInfo != null) && (nodeMethodAttribute != null);
+        }
+
         public MethodInfo methodInfo
         {
             get
